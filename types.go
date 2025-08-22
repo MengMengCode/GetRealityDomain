@@ -97,7 +97,7 @@ type ScanConfig struct {
 func DefaultScanConfig() *ScanConfig {
 	return &ScanConfig{
 		Port:      443,
-		Thread:    2,
+		Thread:    20,
 		Timeout:   10,
 		Output:    "out.csv",
 		Verbose:   false,

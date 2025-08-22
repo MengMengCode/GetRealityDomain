@@ -24,7 +24,7 @@ type Config struct {
 
 var config = Config{
 	Port:    443,
-	Thread:  2,
+	Thread:  20,
 	Timeout: 10,
 	Output:  "out.csv",
 	Verbose: false,
