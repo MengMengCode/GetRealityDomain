@@ -258,36 +258,51 @@ func DetectCloudflareCDN(domain string) bool {
 		return false
 	}
 	
-	// 构造Cloudflare检测URL
+	// 方法1: 检查Cloudflare特有的/cdn-cgi/trace端点
 	url := fmt.Sprintf("https://%s/cdn-cgi/trace", domain)
 	
 	// 创建HTTP客户端，设置较短的超时时间
 	client := &http.Client{
-		Timeout: 5 * time.Second,
+		Timeout: 3 * time.Second,
 	}
 	
 	// 发送请求
 	resp, err := client.Get(url)
-	if err != nil {
-		// 如果请求失败，可能不是Cloudflare，返回false
-		return false
-	}
-	defer resp.Body.Close()
-	
-	// 如果状态码是200，说明存在/cdn-cgi/trace端点
-	if resp.StatusCode == 200 {
-		// 读取响应内容进行进一步验证
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return false
-		}
+	if err == nil {
+		defer resp.Body.Close()
 		
-		bodyStr := string(body)
-		// 检查响应内容是否包含Cloudflare特征
-		return strings.Contains(bodyStr, "fl=") ||
-			   strings.Contains(bodyStr, "h=") ||
-			   strings.Contains(bodyStr, "colo=") ||
-			   strings.Contains(bodyStr, "gateway=")
+		// 如果状态码是200，说明存在/cdn-cgi/trace端点
+		if resp.StatusCode == 200 {
+			// 读取响应内容进行进一步验证
+			body, err := io.ReadAll(resp.Body)
+			if err == nil {
+				bodyStr := string(body)
+				// 检查响应内容是否包含Cloudflare特征
+				if strings.Contains(bodyStr, "fl=") ||
+				   strings.Contains(bodyStr, "h=") ||
+				   strings.Contains(bodyStr, "colo=") ||
+				   strings.Contains(bodyStr, "gateway=") {
+					return true
+				}
+			}
+		}
+	}
+	
+	// 方法2: 检查HTTP响应头中的Cloudflare标识
+	resp2, err := client.Get(fmt.Sprintf("https://%s", domain))
+	if err == nil {
+		defer resp2.Body.Close()
+		
+		// 检查响应头中的Cloudflare标识
+		server := resp2.Header.Get("Server")
+		cfRay := resp2.Header.Get("CF-Ray")
+		cfCache := resp2.Header.Get("CF-Cache-Status")
+		
+		if strings.Contains(strings.ToLower(server), "cloudflare") ||
+		   cfRay != "" ||
+		   cfCache != "" {
+			return true
+		}
 	}
 	
 	return false
