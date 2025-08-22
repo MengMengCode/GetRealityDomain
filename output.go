@@ -176,6 +176,9 @@ func (rp *ResultProcessor) ProcessResults(resultChan <-chan ScanResult) {
 		}
 	}
 	
+	// 最终更新进度条
+	rp.printCurrentStatus()
+	
 	// 输出最终统计
 	fmt.Printf("═══════════════════════════════════════════════════════════════\n")
 	rp.printFinalStats()
@@ -239,6 +242,14 @@ func (rp *ResultProcessor) printFinalStats() {
 	fmt.Printf("错误数量: %d (%.1f%%)\n", rp.errorCount,
 		float64(rp.errorCount)/float64(rp.totalCount)*100)
 	fmt.Printf("扫描用时: %v\n", elapsed.Round(time.Second))
+	
+	// 根据结果数量显示不同的消息
+	if rp.feasibleCount > 0 {
+		fmt.Printf("\n🎉 找到 %d 个符合Reality协议要求的目标！\n", rp.feasibleCount)
+		fmt.Printf("详细结果已保存到CSV文件中。\n")
+	} else {
+		fmt.Printf("\nℹ️  没有找到符合条件的目标\n")
+	}
 }
 
 // Close 关闭结果处理器
