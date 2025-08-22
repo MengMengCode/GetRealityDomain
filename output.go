@@ -137,17 +137,11 @@ func (rp *ResultProcessor) ProcessResults(resultChan <-chan ScanResult) {
 	fmt.Printf("扫描进行中...\n")
 	fmt.Printf("═══════════════════════════════════════════════════════════════\n")
 	
-	// 预留进度条显示区域
-	fmt.Printf("\n\n\n\n") // 预留4行给进度条显示
+	// 初始化进度条显示
+	rp.printCurrentStatus()
 	
 	for result := range resultChan {
 		rp.totalCount++
-		
-		// 写入CSV文件
-		if err := rp.csvWriter.WriteResult(result); err != nil {
-			printError(fmt.Sprintf("写入结果失败: %v", err))
-			continue
-		}
 		
 		// 统计计数和输出日志
 		if result.Error != "" {
@@ -155,7 +149,14 @@ func (rp *ResultProcessor) ProcessResults(resultChan <-chan ScanResult) {
 			// 不输出错误日志，减少噪音
 		} else if result.Feasible {
 			rp.feasibleCount++
-			// 只输出成功日志到分隔线下面
+			
+			// 只有通过所有检测的结果才写入CSV文件
+			if err := rp.csvWriter.WriteResult(result); err != nil {
+				printError(fmt.Sprintf("写入结果失败: %v", err))
+				continue
+			}
+			
+			// 只输出成功日志到进度条下面
 			fmt.Printf("✅ %s (%s) - %s [%dms]\n",
 				result.IP, result.CertDomain, result.GeoCode, result.ResponseTime)
 			
@@ -182,12 +183,6 @@ func (rp *ResultProcessor) ProcessResults(resultChan <-chan ScanResult) {
 
 // printCurrentStatus 打印当前状态信息
 func (rp *ResultProcessor) printCurrentStatus() {
-	// 保存当前光标位置
-	fmt.Print("\033[s")
-	
-	// 移动到进度条显示区域（分隔线后第2行）
-	fmt.Print("\033[4A") // 向上移动4行到进度条区域
-	
 	// 计算进度百分比
 	var percentage float64
 	if rp.totalTargets > 0 {
@@ -208,22 +203,23 @@ func (rp *ResultProcessor) printCurrentStatus() {
 		}
 	}
 	
-	// 清除进度条区域的内容并重新显示
+	// 向上移动3行，清除进度条区域
+	fmt.Print("\033[3A")
+	
+	// 清除并显示进度条
 	fmt.Printf("\033[K[%s] %.1f%%\n", progressBar, percentage)
+	
+	// 清除并显示统计信息
 	fmt.Printf("\033[K已扫描: %d | 发现合规: %d | 错误: %d\n",
 		rp.totalCount, rp.feasibleCount, rp.errorCount)
 	
+	// 清除并显示剩余信息
 	if rp.totalTargets > 0 {
 		remaining := rp.totalTargets - rp.totalCount
 		fmt.Printf("\033[K剩余: %d\n", remaining)
 	} else {
-		fmt.Printf("\033[K\n") // 清空这一行
+		fmt.Printf("\033[K\n")
 	}
-	
-	fmt.Printf("\033[K\n") // 清空最后一行
-	
-	// 恢复光标位置
-	fmt.Print("\033[u")
 }
 
 // printProgress 打印进度信息
