@@ -118,10 +118,22 @@ func scanSingleIP(ip net.IP, origin string, resultChan chan<- ScanResult, geo *G
 	if len(state.PeerCertificates) > 0 {
 		cert := state.PeerCertificates[0]
 		
-		// 获取证书域名
+		// 获取证书域名 - 优先使用DNSNames，如果为空则使用CommonName
 		if len(cert.DNSNames) > 0 {
-			result.CertDomain = strings.Join(cert.DNSNames, ",")
-		} else if cert.Subject.CommonName != "" {
+			// 过滤出有效的域名（包含"."）
+			var validDomains []string
+			for _, domain := range cert.DNSNames {
+				if strings.Contains(domain, ".") {
+					validDomains = append(validDomains, domain)
+				}
+			}
+			if len(validDomains) > 0 {
+				result.CertDomain = strings.Join(validDomains, ",")
+			}
+		}
+		
+		// 如果DNSNames中没有有效域名，尝试使用CommonName
+		if result.CertDomain == "" && cert.Subject.CommonName != "" && strings.Contains(cert.Subject.CommonName, ".") {
 			result.CertDomain = cert.Subject.CommonName
 		}
 		

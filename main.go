@@ -125,10 +125,10 @@ func main() {
 	}
 
 	// 询问并发线程数
-	fmt.Printf("请输入并发线程数 (当前: %d, 建议1-10): ", config.Thread)
+	fmt.Printf("请输入并发线程数 (当前: %d, 建议1-100): ", config.Thread)
 	threadStr := getStringInput()
 	if threadStr != "" {
-		if thread, err := strconv.Atoi(threadStr); err == nil && thread > 0 && thread <= 50 {
+		if thread, err := strconv.Atoi(threadStr); err == nil && thread > 0 && thread <= 1000 {
 			config.Thread = thread
 		} else {
 			printError("无效的线程数，使用默认值")

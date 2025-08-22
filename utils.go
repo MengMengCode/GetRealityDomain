@@ -37,8 +37,8 @@ func ValidateDomainName(domain string) bool {
 
 // isValidRealityDomain 检查域名是否适合用于Reality
 func isValidRealityDomain(domain string) bool {
-	// 只要域名不为空就认为有效，能ping通就是好域名
-	return domain != ""
+	// 域名必须不为空且包含至少一个"."
+	return domain != "" && strings.Contains(domain, ".")
 }
 
 // NextIP 获取下一个或上一个IP地址
