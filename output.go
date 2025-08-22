@@ -179,31 +179,59 @@ func (rp *ResultProcessor) ProcessResults(resultChan <-chan ScanResult) {
 
 // printCurrentStatus 打印当前状态信息
 func (rp *ResultProcessor) printCurrentStatus() {
-	elapsed := time.Since(rp.startTime)
-	rate := float64(rp.totalCount) / elapsed.Seconds()
+	// 清空屏幕并回到顶部
+	fmt.Print("\033[2J\033[H")
 	
-	remaining := 0
+	// 重新打印固定的顶部信息
+	fmt.Printf("ℹ️  开始扫描...\n")
+	fmt.Printf("ℹ️  正在初始化扫描...\n")
+	fmt.Printf("ℹ️  地理位置数据库加载成功: GeoLite2-Country.mmdb\n")
 	if rp.totalTargets > 0 {
-		remaining = rp.totalTargets - rp.totalCount
+		fmt.Printf("ℹ️  扫描目标数量: %d\n", rp.totalTargets)
+	}
+	fmt.Printf("扫描进行中...\n")
+	fmt.Printf("═══════════════════════════════════════════════════════════════\n")
+	
+	// 计算进度百分比
+	var percentage float64
+	if rp.totalTargets > 0 {
+		percentage = float64(rp.totalCount) / float64(rp.totalTargets) * 100
 	}
 	
-	fmt.Printf("📊 状态更新: 已扫描 %d | 发现合规 %d | 剩余 %d | 速度 %.1f/s\n",
-		rp.totalCount, rp.feasibleCount, remaining, rate)
+	// 计算进度条长度（总共30个字符）
+	const progressBarLength = 30
+	filledLength := int(percentage / 100 * progressBarLength)
+	
+	// 构建进度条
+	progressBar := ""
+	for i := 0; i < progressBarLength; i++ {
+		if i < filledLength {
+			progressBar += "▋"
+		} else {
+			progressBar += " "
+		}
+	}
+	
+	// 显示进度条和统计信息
+	fmt.Printf("[%s] %.1f%%\n", progressBar, percentage)
+	fmt.Printf("已扫描: %d | 发现合规: %d | 错误: %d\n",
+		rp.totalCount, rp.feasibleCount, rp.errorCount)
+	
+	if rp.totalTargets > 0 {
+		remaining := rp.totalTargets - rp.totalCount
+		fmt.Printf("剩余: %d\n", remaining)
+	}
 }
 
 // printProgress 打印进度信息
 func (rp *ResultProcessor) printProgress() {
-	elapsed := time.Since(rp.startTime)
-	rate := float64(rp.totalCount) / elapsed.Seconds()
-	
-	printInfo(fmt.Sprintf("已扫描: %d, 符合条件: %d, 错误: %d, 速度: %.1f/s", 
-		rp.totalCount, rp.feasibleCount, rp.errorCount, rate))
+	printInfo(fmt.Sprintf("已扫描: %d, 符合条件: %d, 错误: %d",
+		rp.totalCount, rp.feasibleCount, rp.errorCount))
 }
 
 // printFinalStats 打印最终统计信息
 func (rp *ResultProcessor) printFinalStats() {
 	elapsed := time.Since(rp.startTime)
-	rate := float64(rp.totalCount) / elapsed.Seconds()
 	
 	fmt.Printf("\n扫描完成！\n")
 	fmt.Printf("总扫描数量: %d\n", rp.totalCount)
@@ -212,7 +240,6 @@ func (rp *ResultProcessor) printFinalStats() {
 	fmt.Printf("错误数量: %d (%.1f%%)\n", rp.errorCount,
 		float64(rp.errorCount)/float64(rp.totalCount)*100)
 	fmt.Printf("扫描用时: %v\n", elapsed.Round(time.Second))
-	fmt.Printf("扫描速度: %.1f 个/秒\n", rate)
 }
 
 // Close 关闭结果处理器
