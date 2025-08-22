@@ -137,6 +137,9 @@ func (rp *ResultProcessor) ProcessResults(resultChan <-chan ScanResult) {
 	fmt.Printf("扫描进行中...\n")
 	fmt.Printf("═══════════════════════════════════════════════════════════════\n")
 	
+	// 预留进度条显示区域
+	fmt.Printf("\n\n\n\n") // 预留4行给进度条显示
+	
 	for result := range resultChan {
 		rp.totalCount++
 		
@@ -152,7 +155,7 @@ func (rp *ResultProcessor) ProcessResults(resultChan <-chan ScanResult) {
 			// 不输出错误日志，减少噪音
 		} else if result.Feasible {
 			rp.feasibleCount++
-			// 只输出成功日志
+			// 只输出成功日志到分隔线下面
 			fmt.Printf("✅ %s (%s) - %s [%dms]\n",
 				result.IP, result.CertDomain, result.GeoCode, result.ResponseTime)
 			
@@ -179,18 +182,11 @@ func (rp *ResultProcessor) ProcessResults(resultChan <-chan ScanResult) {
 
 // printCurrentStatus 打印当前状态信息
 func (rp *ResultProcessor) printCurrentStatus() {
-	// 清空屏幕并回到顶部
-	fmt.Print("\033[2J\033[H")
+	// 保存当前光标位置
+	fmt.Print("\033[s")
 	
-	// 重新打印固定的顶部信息
-	fmt.Printf("ℹ️  开始扫描...\n")
-	fmt.Printf("ℹ️  正在初始化扫描...\n")
-	fmt.Printf("ℹ️  地理位置数据库加载成功: GeoLite2-Country.mmdb\n")
-	if rp.totalTargets > 0 {
-		fmt.Printf("ℹ️  扫描目标数量: %d\n", rp.totalTargets)
-	}
-	fmt.Printf("扫描进行中...\n")
-	fmt.Printf("═══════════════════════════════════════════════════════════════\n")
+	// 移动到进度条显示区域（分隔线后第2行）
+	fmt.Print("\033[4A") // 向上移动4行到进度条区域
 	
 	// 计算进度百分比
 	var percentage float64
@@ -198,8 +194,8 @@ func (rp *ResultProcessor) printCurrentStatus() {
 		percentage = float64(rp.totalCount) / float64(rp.totalTargets) * 100
 	}
 	
-	// 计算进度条长度（总共30个字符）
-	const progressBarLength = 30
+	// 计算进度条长度（总共50个字符）
+	const progressBarLength = 50
 	filledLength := int(percentage / 100 * progressBarLength)
 	
 	// 构建进度条
@@ -212,15 +208,22 @@ func (rp *ResultProcessor) printCurrentStatus() {
 		}
 	}
 	
-	// 显示进度条和统计信息
-	fmt.Printf("[%s] %.1f%%\n", progressBar, percentage)
-	fmt.Printf("已扫描: %d | 发现合规: %d | 错误: %d\n",
+	// 清除进度条区域的内容并重新显示
+	fmt.Printf("\033[K[%s] %.1f%%\n", progressBar, percentage)
+	fmt.Printf("\033[K已扫描: %d | 发现合规: %d | 错误: %d\n",
 		rp.totalCount, rp.feasibleCount, rp.errorCount)
 	
 	if rp.totalTargets > 0 {
 		remaining := rp.totalTargets - rp.totalCount
-		fmt.Printf("剩余: %d\n", remaining)
+		fmt.Printf("\033[K剩余: %d\n", remaining)
+	} else {
+		fmt.Printf("\033[K\n") // 清空这一行
 	}
+	
+	fmt.Printf("\033[K\n") // 清空最后一行
+	
+	// 恢复光标位置
+	fmt.Print("\033[u")
 }
 
 // printProgress 打印进度信息
