@@ -136,7 +136,7 @@ func main() {
 	}
 
 	// 询问是否启用ping域名测试连通性
-	scanControl.PingDomain = askYesNo("是否启用ping域名测试连通性？", true)
+	scanControl.PingDomain = askYesNo("是否启用ping域名测试连通性？", false)
 
 	// 使用系统清屏命令
 	clearScreenSystem()
@@ -365,18 +365,17 @@ func showResultsPaginated(filename string) {
 			end = len(feasibleResults)
 		}
 
-		fmt.Printf("%-4s %-15s %-25s %-10s %-15s\n",
-			"序号", "IP地址", "证书域名", "地理位置", "响应时间(ms)")
+		fmt.Printf("%-4s %-15s %-40s %-15s\n",
+			"序号", "IP地址", "证书域名", "响应时间(ms)")
 		fmt.Println(strings.Repeat("-", 75))
 
 		for i := start; i < end; i++ {
 			result := feasibleResults[i]
-			fmt.Printf("%-4d %-15s %-25s %-10s %-15s\n",
+			fmt.Printf("%-4d %-15s %-40s %-15s\n",
 				i+1,
-				result[0],                     // IP
-				truncateString(result[3], 25), // CERT_DOMAIN
-				result[8],                     // GEO_CODE
-				result[10],                    // RESPONSE_TIME_MS
+				result[0],  // IP
+				result[3],  // CERT_DOMAIN (完整显示)
+				result[10], // RESPONSE_TIME_MS
 			)
 		}
 
